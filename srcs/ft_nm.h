@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#define NM_FLAG_PRINT_REVERSE 1 << 1
+
 typedef struct s_symbol
 {
 	char *name;

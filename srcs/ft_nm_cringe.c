@@ -15,6 +15,8 @@
 #include "./libft/libft.h"
 #include "./ft_nm.h"
 
+unsigned int g_flags;
+
 void nm_64bits(char *filename, char *file_content, size_t file_size)
 {
 	if (file_size < sizeof(Elf64_Ehdr))
@@ -171,7 +173,8 @@ void nm_64bits(char *filename, char *file_content, size_t file_size)
 			if (i == j /*|| symbols[j].name == NULL || symbols[j + 1].name == NULL*/)
 				continue;
 
-			if (ft_strcmp(symbols[j].name, symbols[j + 1].name) > 0)
+			if ((!(g_flags & NM_FLAG_PRINT_REVERSE) && ft_strcmp(symbols[j].name, symbols[j + 1].name) > 0) \
+				|| (g_flags & NM_FLAG_PRINT_REVERSE) && ft_strcmp(symbols[j].name, symbols[j + 1].name) < 0)
 			{
 				t_symbol tmp = symbols[j];
 				symbols[j] = symbols[j + 1];
@@ -292,17 +295,25 @@ int main(int argc, char **argv)
 {
 	char *filenames[argc];
 	int filecount;
+	g_flags = 0;
 
-	if (argc == 1)
+	for (int i = 1; i < argc; i++)
+	{
+		if (!ft_strcmp("-r", argv[i]))
+		{
+			g_flags |= NM_FLAG_PRINT_REVERSE;
+		}
+		else
+		{
+			filenames[filecount++] = argv[i];
+		}
+	}
+
+
+	if (filecount == 0)
 	{
 		filecount = 1;
 		filenames[0] = "a.out";
-	}
-	else
-	{
-		filecount = argc - 1;
-		for (int i = 1; i < argc; i++)
-			filenames[i - 1] = argv[i];
 	}
 
 	for (int i = 0; i < filecount; i++)
