@@ -33,13 +33,16 @@ void nm_64bits(char *filename, char *file_content, size_t file_size)
 	size_t section_header_count = header.e_shnum;
 	size_t shstrtab_index = header.e_shstrndx;
 
+
 	if ((char *)section_header_start + (section_header_size * section_header_count) > file_content + file_size)
 	{
 		ft_printf("File '%s' section headers have been truncated\n", filename);
 		return;
 	}
 
-	Elf64_Shdr shstrtab = *(Elf64_Shdr *)((char *)section_header_start + (section_header_size * shstrtab_index));
+	Elf64_Shdr *section_header_table = (Elf64_Shdr *)section_header_start;
+
+	Elf64_Shdr shstrtab = section_header_table[shstrtab_index];
 
 	if (shstrtab.sh_type != SHT_STRTAB)
 	{
@@ -60,7 +63,7 @@ void nm_64bits(char *filename, char *file_content, size_t file_size)
 
 	for (size_t i = 0; i < section_header_count; i++)
 	{
-		Elf64_Shdr section_header = *(Elf64_Shdr *)((char *)section_header_start + (section_header_size * i));
+		Elf64_Shdr section_header = section_header_table[i];
 
 		char *name = file_content + shstrtab.sh_offset + section_header.sh_name;
 		if (name >= file_content + file_size)
@@ -144,25 +147,85 @@ void nm_64bits(char *filename, char *file_content, size_t file_size)
 		symbol->name = (file_content + strtab.sh_offset) + symbol_table[i].st_name;
 
 		symbol->offset = symbol_table[i].st_value;
+		unsigned char st_bind = ELF64_ST_BIND(symbol_table[i].st_info);
+		unsigned char st_type = ELF64_ST_TYPE(symbol_table[i].st_info);
 
-		if (ELF64_ST_BIND(symbol_table[i].st_info) == STB_WEAK)
-			symbol->type = 'w';
-		else if (ELF64_ST_TYPE(symbol_table[i].st_info) == STT_OBJECT)
+		// https://stackoverflow.com/questions/15225346/how-to-display-the-symbols-type-like-the-nm-command
+		Elf64_Sym *elf_symbol = &(symbol_table[i]);
+
+		if (st_bind == STB_GNU_UNIQUE)
+			symbol->type = 'u';
+		else if (st_bind == STB_WEAK)
 		{
-			if (ELF64_ST_BIND(symbol_table[i].st_info) == STB_GLOBAL)
-				symbol->type = 'D';
+			// st_shndx holds index of section of symbol (undef = external)
+			if (elf_symbol->st_shndx == SHN_UNDEF)
+				symbol->type = 'w';
 			else
-				symbol->type = 'd';
+				symbol->type = 'W'; // upercase means a default value has been specified
 		}
-		else if (symbol_table[i].st_shndx == SHN_UNDEF)
+		else if (st_bind == STB_WEAK && st_type == STT_OBJECT)
+		{
+			if (elf_symbol->st_shndx == SHN_UNDEF)
+				symbol->type = 'v';
+			else
+				symbol->type = 'V';
+		}
+		else if (elf_symbol->st_shndx == SHN_UNDEF)
+		{
 			symbol->type = 'U';
-		else
+		}
+		else if (elf_symbol->st_shndx == SHN_ABS)
+		{
+			symbol->type = 'A';
+		}
+		else if (elf_symbol->st_shndx == SHN_COMMON)
+		{
+			symbol->type = 'C';
+		}
+		else if (section_header_table[elf_symbol->st_shndx].sh_type == SHT_NOBITS \
+				 && section_header_table[elf_symbol->st_shndx].sh_flags == (SHF_ALLOC | SHF_WRITE))
+		{
+			symbol->type = 'B';
+		}
+		else if (section_header_table[elf_symbol->st_shndx].sh_type == SHT_PROGBITS \
+				 && section_header_table[elf_symbol->st_shndx].sh_flags == SHF_ALLOC)
+		{
+			symbol->type = 'R';
+		}
+		else if (section_header_table[elf_symbol->st_shndx].sh_type == SHT_PROGBITS \
+				 && section_header_table[elf_symbol->st_shndx].sh_flags == (SHF_ALLOC | SHF_WRITE))
+		{
+			symbol->type = 'D';
+		}
+		else if (section_header_table[elf_symbol->st_shndx].sh_type == SHT_PROGBITS \
+				 && section_header_table[elf_symbol->st_shndx].sh_flags == (SHF_ALLOC | SHF_EXECINSTR))
+		{
 			symbol->type = 'T';
-		// else
-		// 	symbol->type = '?';
+		}
+		else if (section_header_table[elf_symbol->st_shndx].sh_type == SHT_DYNAMIC)
+		{
+			symbol->type ='D';
+		}
+		else
+		{
+			symbol->type = '?';
+		}
+
+		// make lowercase if local
+		if (symbol->type != '?' && st_bind == STB_LOCAL)
+			symbol->type += 32;
+
+		// printf("%s: ", symbol->name);
+
+		// printf("%04X ", *((Elf64_Word *)elf_symbol));
+		// printf("%X ", *((unsigned char *)elf_symbol + sizeof(Elf64_Word)));
+		// printf("%X ", *((unsigned char *)elf_symbol + sizeof(Elf64_Word) + 1));
+		// printf("%04X ", *((Elf64_Word *)elf_symbol + sizeof(Elf64_Word) + 2));
+		// printf("%02X ", *((Elf64_Half *)((char *)elf_symbol + sizeof(Elf64_Word) + 2)));
+		// printf("%08lX ", *((Elf64_Addr *)((char *)elf_symbol + sizeof(Elf64_Word) + 2 + sizeof(Elf64_Half))));
+		// printf("%08lX\n", *((Elf64_Xword*)((char *)elf_symbol + sizeof(Elf64_Word) + 2 + sizeof(Elf64_Half) + sizeof(Elf64_Xword))));
 
 		symbol_index++;
-		// ft_printf("Symbol %s (size %u) value: %x\n", name, ft_strlen(name), symbol_table[i].st_value);
 	}
 
 	// sort_symbols:
@@ -173,13 +236,24 @@ void nm_64bits(char *filename, char *file_content, size_t file_size)
 			if (i == j /*|| symbols[j].name == NULL || symbols[j + 1].name == NULL*/)
 				continue;
 
-			if ((!(g_flags & NM_FLAG_PRINT_REVERSE) && ft_strcmp(symbols[j].name, symbols[j + 1].name) > 0) \
-				|| (g_flags & NM_FLAG_PRINT_REVERSE) && ft_strcmp(symbols[j].name, symbols[j + 1].name) < 0)
+			int str_diff = ft_strcmp(symbols[j].name, symbols[j + 1].name);
+
+			if ((str_diff > 0 && !(g_flags & NM_FLAG_PRINT_REVERSE)) \
+				|| (str_diff < 0 && (g_flags & NM_FLAG_PRINT_REVERSE)))
 			{
 				t_symbol tmp = symbols[j];
 				symbols[j] = symbols[j + 1];
 				symbols[j + 1] = tmp;
 			}
+			// // nm seems to sort from biggest value to lowest if the name is the same
+			// else if (str_diff == 0 && symbols[j].offset != 0 && symbols[j].offset != 0 \
+			// 	&& ((!(g_flags | NM_FLAG_PRINT_REVERSE)) && symbols[j].offset > symbols[j + 1].offset) \
+			// 		|| ((g_flags | NM_FLAG_PRINT_REVERSE) && symbols[j].offset < symbols[j + 1].offset))
+			// {
+			// 	t_symbol tmp = symbols[j];
+			// 	symbols[j] = symbols[j + 1];
+			// 	symbols[j + 1] = tmp;
+			// }
 		}
 	}
 
