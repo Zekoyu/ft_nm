@@ -258,31 +258,34 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 	}
 
 	// sort_symbols:
-	for (size_t i = 0; i < symbol_count - 1; i++)
+	if (!(g_flags & NM_FLAG_NO_SORTING))
 	{
-		for (size_t j = 0; j < symbol_count - i - 1; j++)
+		for (size_t i = 0; i < symbol_count - 1; i++)
 		{
-			if (i == j)
-				continue;
-
-			int str_diff = ft_strcmp(symbols[j].name, symbols[j + 1].name);
-
-			if ((str_diff > 0 && !(g_flags & NM_FLAG_PRINT_REVERSE)) \
-				|| (str_diff < 0 && (g_flags & NM_FLAG_PRINT_REVERSE)))
+			for (size_t j = 0; j < symbol_count - i - 1; j++)
 			{
-				t_symbol tmp = symbols[j];
-				symbols[j] = symbols[j + 1];
-				symbols[j + 1] = tmp;
+				if (i == j)
+					continue;
+
+				int str_diff = ft_strcmp(symbols[j].name, symbols[j + 1].name);
+
+				if ((str_diff > 0 && !(g_flags & NM_FLAG_PRINT_REVERSE)) \
+					|| (str_diff < 0 && (g_flags & NM_FLAG_PRINT_REVERSE)))
+				{
+					t_symbol tmp = symbols[j];
+					symbols[j] = symbols[j + 1];
+					symbols[j + 1] = tmp;
+				}
+				// // nm seems to sort from biggest value to lowest if the name is the same
+				// else if (str_diff == 0 && symbols[j].offset != 0 && symbols[j].offset != 0 \
+				// 	&& ((!(g_flags | NM_FLAG_PRINT_REVERSE)) && symbols[j].offset > symbols[j + 1].offset) \
+				// 		|| ((g_flags | NM_FLAG_PRINT_REVERSE) && symbols[j].offset < symbols[j + 1].offset))
+				// {
+				// 	t_symbol tmp = symbols[j];
+				// 	symbols[j] = symbols[j + 1];
+				// 	symbols[j + 1] = tmp;
+				// }
 			}
-			// // nm seems to sort from biggest value to lowest if the name is the same
-			// else if (str_diff == 0 && symbols[j].offset != 0 && symbols[j].offset != 0 \
-			// 	&& ((!(g_flags | NM_FLAG_PRINT_REVERSE)) && symbols[j].offset > symbols[j + 1].offset) \
-			// 		|| ((g_flags | NM_FLAG_PRINT_REVERSE) && symbols[j].offset < symbols[j + 1].offset))
-			// {
-			// 	t_symbol tmp = symbols[j];
-			// 	symbols[j] = symbols[j + 1];
-			// 	symbols[j + 1] = tmp;
-			// }
 		}
 	}
 

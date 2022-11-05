@@ -116,6 +116,10 @@ int main(int argc, char **argv)
 		{
 			g_flags |= NM_FLAG_ONLY_UNDEFINED;
 		}
+		else if (!ft_strcmp("-p", argv[i]))
+		{
+			g_flags |= NM_FLAG_NO_SORTING;
+		}
 		else
 		{
 			filenames[filecount++] = argv[i];

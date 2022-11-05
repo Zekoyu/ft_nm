@@ -22,6 +22,8 @@
 #define NM_FLAG_ALL_SYMBOLS 1 << 2 // -a
 #define NM_FLAG_ONLY_GLOBAL 1 << 3 // -g
 #define NM_FLAG_ONLY_UNDEFINED 1 << 4 // -u
+#define NM_FLAG_NO_SORTING 1 << 5 // -p
+
 
 typedef struct s_symbol
 {
