@@ -10,7 +10,7 @@
 
 unsigned int g_flags = 0;
 
-void ft_nm(char *filename)
+int ft_nm(char *filename)
 {
 	int fd;
 	struct stat file_infos;
@@ -19,21 +19,21 @@ void ft_nm(char *filename)
 	if ((fd = open(filename, O_RDONLY)) < 0)
 	{
 		ft_printf("Cannot open file %s\n", filename);
-		return;
+		return 1;
 	}
 
 	if (fstat(fd, &file_infos) < 0)
 	{
 		ft_printf("Cannot stat file %s\n", filename);
 		close(fd);
-		return;
+		return 1;
 	}
 
 	if (file_infos.st_size < EI_NIDENT) // If we cannot get identification infos (magic number, architecture etc.)
 	{
 		ft_printf("File '%s' has been truncated\n", filename);
 		close(fd);
-		return;
+		return 1;
 	}
 
 	// open read only (and not shared with other processes)
@@ -41,7 +41,7 @@ void ft_nm(char *filename)
 	{
 		ft_printf("Cannot map file %s\n", filename);
 		close(fd);
-		return;
+		return 1;
 	}
 
 	// from the man, we can close the fd without invalidating the mapping, so close it asap
@@ -60,24 +60,26 @@ void ft_nm(char *filename)
 		{
 			ft_printf("File '%s' ELF version is invalid\n", filename);
 			munmap(file_content, file_infos.st_size);
-			return;
+			return 1;
 		}
 
 		unsigned char class = elf_identification[EI_CLASS];
 
 		if (class == ELFCLASS32)
 		{
-			ft_nm_32bits(filename, file_content, file_infos.st_size);
+			if (ft_nm_32bits(filename, file_content, file_infos.st_size) != 0)
+				return 1;
 		}
 		else if (class == ELFCLASS64)
 		{
-			ft_nm_64bits(filename, file_content, file_infos.st_size);
+			if (ft_nm_64bits(filename, file_content, file_infos.st_size) != 0)
+				return 1;
 		}
 		else
 		{
 			ft_printf("File '%s' header is invalid (wrong header class)\n", filename);
 			munmap(file_content, file_infos.st_size);
-			return;
+			return 1;
 		}
 
 		munmap(file_content, file_infos.st_size);
@@ -85,7 +87,7 @@ void ft_nm(char *filename)
 	else
 	{
 		ft_printf("File '%s' is not an ELF file\n", filename);
-		return;
+		return 1;
 	}
 }
 
@@ -133,14 +135,19 @@ int main(int argc, char **argv)
 		filenames[0] = "a.out";
 	}
 
+	int ret = EXIT_SUCCESS;
+
 	for (int i = 0; i < filecount; i++)
 	{
 		char *file = filenames[i];
 
 		if (filecount != 1) // print filenames
-			ft_putstr_fd("test", STDOUT_FILENO);
-			// ft_printf("\n%s:\n", file);
+			ft_printf("\n%s:\n", file);
 
-		ft_nm(file);
+		ret = ft_nm(file);
 	}
+
+	if (ret != 0)
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }

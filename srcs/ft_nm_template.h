@@ -14,11 +14,12 @@
 
 #include "./ft_nm.h"
 
-void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
+int FN(ft_nm)(char *filename, char *file_content, size_t file_size)
+{
 	if (file_size < sizeof(CCAT_NAME(Elf,_Ehdr)))
 	{
 		ft_printf("File '%s' header has been truncated\n", filename);
-		return;
+		return 1;
 	}
 	//http://www.skyfree.org/linux/references/ELF_Format.pdf
 
@@ -32,13 +33,13 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 	if ((char *)header_section_start + (header_section_size * header_section_entries_count) > file_content + file_size)
 	{
 		ft_printf("File '%s' section headers have been truncated\n", filename);
-		return;
+		return 1;
 	}
 
 	if (shstrtab_section_index >= header_section_entries_count)
 	{
-		ft_printf("File '%s' shstrtab section index is wrong");
-		return;
+		ft_printf("File '%s' shstrtab section index is wrong", filename);
+		return 1;
 	}
 
 	CCAT_NAME(Elf,_Shdr) *section_header_table = (CCAT_NAME(Elf,_Shdr) *)header_section_start;
@@ -48,13 +49,13 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 	if (shstrtab.sh_type != SHT_STRTAB)
 	{
 		ft_printf("File '%s' shstrab table not found (invalid sh_type)\n", filename);
-		return;
+		return 1;
 	}
 
 	if (shstrtab.sh_offset + shstrtab.sh_size > file_size)
 	{
 		ft_printf("File '%s' shstrab size does not match\n", filename);
-		return;
+		return 1;
 	}
 
 	CCAT_NAME(Elf,_Shdr) strtab;
@@ -70,7 +71,7 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 		if (name >= file_content + file_size)
 		{
 			ft_printf("File '%s' header %u name is located outside executable\n", filename, i);
-			return;
+			return 1;
 		}
 
 		if (!ft_strncmp(".strtab", name, ft_strlen(".strtab") + 1) && section_header.sh_type == SHT_STRTAB)
@@ -79,7 +80,7 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 			if (strtab.sh_name != 0)
 			{
 				ft_printf("File '%s' has multiple .strtab sections\n", filename);
-				return;
+				return 1;
 			}
 			strtab = section_header;
 		}
@@ -88,7 +89,7 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 			if (symtab.sh_name != 0)
 			{
 				ft_printf("File '%s' has multiple .symtab sections\n", filename);
-				return;
+				return 1;
 			}
 			symtab = section_header;
 		}
@@ -96,25 +97,29 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 		// ft_printf("Section %u name is %s\n", i, name);
 	}
 
-	if (strtab.sh_name == 0)
-	{
-		ft_printf("File '%s' has no .strtab section\n");
-		return;
-	}
+	// if no symbols, not an error
 	if (symtab.sh_name == 0)
 	{
-		ft_printf("File '%s' has no .symtab section\n");
-		return;
+		// idk why ft_printf_fd(STDERR) prints in double
+		ft_putstr_fd("File '", STDERR_FILENO);
+		ft_putstr_fd(filename, STDERR_FILENO);
+		ft_putstr_fd("' has no symbols\n", STDERR_FILENO);
+		return 0;
+	}
+	if (strtab.sh_name == 0)
+	{
+		ft_printf("File '%s' has no .strtab section\n", filename);
+		return 1;
 	}
 	if (strtab.sh_offset + strtab.sh_size > file_size)
 	{
-		ft_printf("File '%s' .strtab size is wrong\n");
-		return;
+		ft_printf("File '%s' .strtab size is wrong\n", filename);
+		return 1;
 	}
 	if (symtab.sh_offset + symtab.sh_size > file_size)
 	{
-		ft_printf("File '%s' .symtab size is wrong\n");
-		return;
+		ft_printf("File '%s' .symtab size is wrong\n", filename);
+		return 1;
 	}
 
 	CCAT_NAME(Elf,_Sym) *symbol_table = (CCAT_NAME(Elf,_Sym) *)(file_content + symtab.sh_offset);
@@ -124,7 +129,7 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 	if (!symbols)
 	{
 		ft_printf("Malloc error in '%s' file while trying to allocate size for %u symbols\n", filename, symbol_count);
-		return;
+		return 1;
 	}
 	ft_bzero(symbols, sizeof(t_symbol) * symbol_count);
 
@@ -264,9 +269,6 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 		{
 			for (size_t j = 0; j < symbol_count - i - 1; j++)
 			{
-				if (i == j)
-					continue;
-
 				int str_diff = ft_strcmp(symbols[j].name, symbols[j + 1].name);
 
 				if ((str_diff > 0 && !(g_flags & NM_FLAG_PRINT_REVERSE)) \
@@ -317,6 +319,8 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 			}
 		}
 	}
+
+	return 0;
 }
 
 #undef ARCHITECTURE
