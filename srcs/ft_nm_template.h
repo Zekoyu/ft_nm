@@ -154,6 +154,23 @@ int FN(ft_nm)(char *filename, char *file_content, size_t file_size)
 
 		symbol->name = (file_content + strtab.sh_offset) + symbol_table[i].st_name;
 
+		if (symbol->name > file_content + file_size)
+		{
+			ft_printf("Incorrect symbol name offset in file '%s'\n", filename);
+			return 1;
+		}
+
+		char *check = symbol->name;
+
+		while (*check != '\0' && check <= (file_content + file_size))
+			check++;
+
+		if (*check != '\0')
+		{
+			ft_printf("A symbol is non NULL terminated in file '%s'\n", filename);
+			return 1;
+		}
+
 		symbol->offset = symbol_table[i].st_value;
 		unsigned char st_bind = CCAT_NAME(ELF,_ST_BIND)(symbol_table[i].st_info);
 		unsigned char st_type = CCAT_NAME(ELF,_ST_TYPE)(symbol_table[i].st_info);
