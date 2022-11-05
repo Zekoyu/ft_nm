@@ -18,8 +18,10 @@
 
 #include "./libft/libft.h"
 
-#define NM_FLAG_PRINT_REVERSE 1 << 1
-#define NM_FLAG_ALL_SYMBOLS 1 << 2
+#define NM_FLAG_PRINT_REVERSE 1 << 1 // -r
+#define NM_FLAG_ALL_SYMBOLS 1 << 2 // -a
+#define NM_FLAG_ONLY_GLOBAL 1 << 3 // -g
+#define NM_FLAG_ONLY_UNDEFINED 1 << 4 // -u
 
 typedef struct s_symbol
 {

@@ -89,7 +89,10 @@ void ft_nm(char *filename)
 	}
 }
 
-// https://medium.com/a-42-journey/nm-otool-everything-you-need-to-know-to-build-your-own-7d4fef3d7507
+// https://www.mkssoftware.com/docs/man1/nm.1.asp
+// https://sourceware.org/binutils/docs/binutils/nm.html
+// https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#:~:text=In%20computing%2C%20the%20Executable%20and,shared%20libraries%2C%20and%20core%20dumps.
+// https://docs.oracle.com/cd/E19683-01/816-1386/chapter6-79797/index.html
 int main(int argc, char **argv)
 {
 	char *filenames[argc];
@@ -104,6 +107,14 @@ int main(int argc, char **argv)
 		else if (!ft_strcmp("-a", argv[i]))
 		{
 			g_flags |= NM_FLAG_ALL_SYMBOLS;
+		}
+		else if (!ft_strcmp("-g", argv[i]))
+		{
+			g_flags |= NM_FLAG_ONLY_GLOBAL;
+		}
+		else if (!ft_strcmp("-u", argv[i]))
+		{
+			g_flags |= NM_FLAG_ONLY_UNDEFINED;
 		}
 		else
 		{

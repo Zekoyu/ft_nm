@@ -229,6 +229,21 @@ void FN(ft_nm)(char *filename, char *file_content, size_t file_size) {
 			continue;
 		}
 
+		// if -u, don't show if not UNDEF
+		if ((g_flags & NM_FLAG_ONLY_UNDEFINED) && elf_symbol->st_shndx != SHN_UNDEF)
+		{
+			symbol_count--;
+			continue;
+		}
+
+		// if -g, show only external (non-local)
+		if ((g_flags & NM_FLAG_ONLY_GLOBAL) && st_bind == STB_LOCAL)
+		{
+			symbol_count--;
+			continue;
+		}
+
+
 		// printf("%s: ", symbol->name);
 
 		// printf("%04X ", *((CCAT_NAME(Elf,_Word) *)elf_symbol));
