@@ -4,6 +4,10 @@
 #define SUFFIX _64bits
 #include "./ft_nm_template.h"
 
+#define ARCHITECTURE 32
+#define SUFFIX _32bits
+#include "./ft_nm_template.h"
+
 unsigned int g_flags = 0;
 
 void ft_nm(char *filename)
@@ -63,7 +67,7 @@ void ft_nm(char *filename)
 
 		if (class == ELFCLASS32)
 		{
-
+			ft_nm_32bits(filename, file_content, file_infos.st_size);
 		}
 		else if (class == ELFCLASS64)
 		{
@@ -96,6 +100,10 @@ int main(int argc, char **argv)
 		if (!ft_strcmp("-r", argv[i]))
 		{
 			g_flags |= NM_FLAG_PRINT_REVERSE;
+		}
+		else if (!ft_strcmp("-a", argv[i]))
+		{
+			g_flags |= NM_FLAG_ALL_SYMBOLS;
 		}
 		else
 		{

@@ -9,7 +9,7 @@ NAME = ft_nm
 
 CC = gcc
 
-CFLAGS = # -Wall -Wextra -Werror
+CFLAGS =  # -Wall -Wextra -Werror
 
 SHELL = zsh
 
@@ -35,6 +35,7 @@ RESET = \033[0m
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo -n "$(SAME_LINE)$(AQUA)Compiling $(AQUA_BOLD)$<$(RESET)"
 
+# need .h files so will recompile when header changes
 $(NAME):	$(LIBFT) $(OBJS)
 	@echo
 	@echo "$(PURPLE)Linking ($(PURPLE)*.o) into $(PURPLE_BOLD)$(NAME)$(RESET)"
@@ -59,5 +60,13 @@ fclean:		clean
 	@make -C $(LIBFT_FOLDER) fclean
 
 re:			fclean all
+
+# Re only for exec not dependencies
+rexec:
+	@rm -f $(OBJS)
+	@echo "$(RED)Removing $(IRED)*.o$(RESET)"
+	@rm -f $(NAME)
+	@echo "$(RED)Removing $(IRED)$(NAME)$(RESET)"
+	@$(MAKE)
 
 .PHONY:	all clean fclean re
