@@ -337,6 +337,8 @@ int FN(ft_nm)(char *filename, char *file_content, size_t file_size)
 		}
 	}
 
+	free(symbols);
+
 	return 0;
 }
 
