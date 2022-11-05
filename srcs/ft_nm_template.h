@@ -317,8 +317,8 @@ int FN(ft_nm)(char *filename, char *file_content, size_t file_size)
 
 		if (symbol.name != NULL)
 		{
-			// nm shows absolute symbol offset (which is 0) = filenames, only with -a option
-			if (symbol.offset == 0 && symbol.type != 'a' && symbol.type != 'A')
+			// nm shows offset of all non-undefined symbols from my experience even if 0
+			if (symbol.offset == 0 && symbol.type == 'U')
 			{
 				ft_printf("                 %c %s\n", symbol.type, symbol.name);
 			}
